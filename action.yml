@@ -1,0 +1,103 @@
+##
+## GitHub on Discord - send stuff to Discord without spamming it.
+##
+## Context available when formatting:
+## {
+##     env: { ...process.env },   # process.env from NodeJS
+##     github: {
+##         ...github,             # github from require('@actions/github').
+##         branch: 'master',      # github.context.ref with trimmed /ref/heads.
+##         commit: ...,           # current commit from github.context.payload.commits[n]. Only available in discord-commit-*.
+##         run: ...,              # current run, from GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs API. Only available in discord-job-*.
+##         last_run: ...,         # previous run, from GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs API. Only available in discord-job-*.
+##         job: ...,              # failing job, from GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs. Only available in discord-job-new-failure-*.
+##         failing_steps: '..',   # A comma-separated list of failing step names. Only available in discord-job-new-failure-*.
+##     },
+## };
+##
+## Note that action-provided values should be contained within {{ }} for interpolation to work. ${{ }} syntax is reserved by github and would be filled in
+## before action runs, therefore custom context values would not be available.
+##
+
+name: 'GitHub on Discord'
+description: 'Doing stuff so you dont have to.'
+inputs:
+  action-task:
+    description: 'Task this action is to perform. One of: discord-commits, discord-jobs.'
+    required: true
+  
+  # Common options
+  github-token:
+    description: 'GitHub access token.'
+    required: true
+  discord-webhook:
+    description: 'Discord webhook.'
+    required: false
+  discord-username:
+    description: 'Username of discord bot.'
+    required: false
+  discord-avatar-url:
+    description: 'URL to avatar of discord bot.'
+    required: false
+  discord-filter:
+    description: 'Filter expression which decides whether this job will be processed.'
+    required: false
+    default: "'{{ github.branch }}' == 'master'"
+
+  # discord-commits options.
+  discord-commit-message:
+    description: 'Commit message template'
+    required: false
+    default: '{{ commit.author.name }} ([@{{ github.context.payload.head_commit.author.username }}](https://github.com/{{ github.context.payload.head_commit.author.username }}/)) commited: [{{ commit.title }}]({{ commit.url }})'
+  discord-commit-embed:
+    description: 'Commit embed template'
+    required: false
+    default: |
+      {
+        "title": "{{ commit.title }}",
+        "description": "{{ commit.description }}",
+        "url": "{{ commit.url }}",
+        "timestamp": "{{ commit.timestamp }}",
+        "author": {
+          "name": "{{ commit.author.name }} ({{ commit.author.username }})",
+          "icon_url": "https://unavatar.now.sh/gravatar/{{ commit.author.email }}"
+        },
+        "color": "0x294A70"
+      }
+
+  # discord-jobs options.
+  discord-job-new-failure-message:
+    description: 'Template of new job failure message.'
+    required: false
+    default: "Failing commit diff: {{ github.context.payload.compare }}"
+  discord-job-new-failure-embed:
+    description: 'Embed template for reporting new job failures.'
+    required: false
+    default: |
+      {
+        "title": "`{{ job.name }}` job is failing!",
+        "description": "Bad [@{{ github.context.payload.head_commit.author.username }}](https://github.com/{{ github.context.payload.head_commit.author.username }}/)!\nCommit [{{ github.context.payload.head_commit.title }}]({{ github.context.payload.head_commit.url }}) pushed to [{{ github.branch }}]({{ github.branch_url }}) broke job [{{ job.name }}]({{ job.url }}).\nFailing steps: {{ failing_steps }}",
+        "url": "{{ job.url }}",
+        "color": "0xFF0000",
+        "timestamp": "{{ run.updated_at }}"
+      }
+
+  discord-job-fixed-failure-message:
+    description: 'Title of fixed job failure message.'
+    required: false
+    default: "[{{ github.branch }}]({{ github.branch_url }}) branch is no longer failing!"
+  discord-job-fixed-failure-embed:
+    description: 'Message template for reporting previously failed job succeeding.'
+    required: false
+    default: |
+      {
+        "title": "`{{ github.branch }}` branch is no longer failing!",
+        "description": "Build failures were fixed on [{{ github.branch }}]({{ github.branch_url }}) branch. Good job [@{{ github.context.payload.head_commit.author.username }}](https://github.com/{{ github.context.payload.head_commit.author.username }}/)!",
+        "color": "0x00FF00",
+        "url": "{{ github.context.payload.head_commit.url }}",
+        "timestamp": "{{ run.completed_at }}"
+      }
+
+runs:
+  using: 'node12'
+  main: 'index.js'

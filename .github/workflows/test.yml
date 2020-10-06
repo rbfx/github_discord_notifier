@@ -1,0 +1,36 @@
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Task Automation
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Use Node 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+
+      - name: Install NPM Dependencies (prod)
+        run: npm install --production
+
+      - name: Publish Commits
+        uses: ./
+        with:
+          discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          github-token: ${{ github.token }}
+          action-task: discord-commits
+          discord-filter: "'{{ github.branch }}' == 'master'"
+          discord-username: GitHub
+
+      - name: Publish Jobs
+        uses: ./
+        with:
+          discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          github-token: ${{ github.token }}
+          action-task: discord-jobs
+          discord-filter: "'{{ github.branch }}' == 'master' && '{{ run.conclusion }}' != '{{ last_run.conclusion }}'"
+          discord-username: GitHub Actions
