@@ -66,11 +66,21 @@ function PrepareDiscordMessage(msg_payload, content_template, embed_template, $c
     content_template = content_template ? core.getInput(content_template) : '';
     if (content_template)
         msg_payload['content'] = _.template(content_template)($context);
-    
+
     embed_template = embed_template ? core.getInput(embed_template) : embed_template;
     if (embed_template)
     {
-        let embed = JSON.parse(_.template(embed_template)($context));
+        var embed;
+        try
+        {
+            embed = JSON.parse(_.template(embed_template)($context));
+        }
+        catch (e)
+        {
+            console.log('JSON syntax error in:');
+            console.log(embed_template);
+            throw e;
+        }
         if ('color' in embed)
             embed.color = parseInt(embed.color);
         if (!('embeds' in msg_payload))
