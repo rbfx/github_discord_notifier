@@ -203,7 +203,7 @@ async function PublishDiscordJobs()
         let run = runs.data.workflow_runs[i];
         if (run.id == github.context.runId)
             this_run = run;
-        else if (this_run != undefined)
+        else if (this_run != undefined && run.head_branch == this_run.head_branch)
         {
             if (run.conclusion != 'success' && run.conclusion != 'failure')
                 continue;
