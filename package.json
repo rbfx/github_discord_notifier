@@ -13,6 +13,6 @@
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0",
     "axios": "^0.20.0",
-    "lodash": "^4.17.20"
+    "mustache": "^4.0.1"
   }
 }

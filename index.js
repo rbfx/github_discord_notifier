@@ -1,12 +1,25 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
-const axios = require('axios').default;
-const _ = require('lodash');
+const axios = require('axios');
+const Mustache = require('mustache');
 
 if (github.context.eventName != 'push')
     return;
 
-_.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
+// No escaping by default. We are formatting simple text.
+Mustache.escape = function (value) { return value; }
+
+// Rendering functions.
+let render = Mustache.render;
+function renderJSON(template, context)
+{
+    // Escape double-quotes for JSON.
+    let old_escape = Mustache.escape;
+    Mustache.escape = function (value) { return value.replace('"', '\\"'); }
+    let result = Mustache.render(template, context);
+    Mustache.escape = old_escape;
+    return result;
+}
 
 // Common context.
 let branch_or_tag = github.context.ref.startsWith('refs/heads/')
@@ -41,7 +54,7 @@ function IsAccepted($context)
     let discord_commit_filter = core.getInput('discord-filter');
     if (discord_commit_filter)
     {
-        let filter_expr = _.template(discord_commit_filter)($context);
+        let filter_expr = render(discord_commit_filter, $context);
         try
         {
             if (!eval(filter_expr))
@@ -65,7 +78,7 @@ function PrepareDiscordMessage(msg_payload, content_template, embed_template, $c
 {
     content_template = content_template ? core.getInput(content_template) : '';
     if (content_template)
-        msg_payload['content'] = _.template(content_template)($context);
+        msg_payload['content'] = render(content_template, $context);
 
     embed_template = embed_template ? core.getInput(embed_template) : embed_template;
     if (embed_template)
@@ -73,7 +86,7 @@ function PrepareDiscordMessage(msg_payload, content_template, embed_template, $c
         var embed;
         try
         {
-            embed = JSON.parse(_.template(embed_template)($context));
+            embed = JSON.parse(renderJSON(embed_template, $context));
         }
         catch (e)
         {
