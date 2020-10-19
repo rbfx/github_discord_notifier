@@ -64,6 +64,10 @@ inputs:
         },
         "color": "0x294A70"
       }
+  discord-commit-push-all:
+    description: 'Push all commits instead of just latest one.'
+    required: false
+    default: 'false'
 
   # discord-jobs options.
   discord-job-new-failure-message:

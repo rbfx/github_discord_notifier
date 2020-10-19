@@ -145,25 +145,42 @@ async function SendDiscordMessage(payload)
     }
 }
 
+async function SendCommitToDiscord(commit)
+{
+    let $context = {
+        ...$context_base,
+        commit: { ...commit },
+    };
+
+    // Filter out undesired commits.
+    if (!IsAccepted($context))
+        return;
+
+    let payload = { timestamp: commit.timestamp };
+    PrepareDiscordMessage(payload, 'discord-commit-message', 'discord-commit-embed', $context);
+    await SendDiscordMessage(payload);
+}
+
 async function PublishDiscordCommits()
 {
-    // Send commits to discord
-    for (var i = 0; i < github.context.payload.commits.length; i++)
+    let push_all = false;
+    try
     {
-        let commit = github.context.payload.commits[i];
-        let $context = {
-            ...$context_base,
-            commit: { ...commit },
-        };
-
-        // Filter out undesired commits.
-        if (!IsAccepted($context))
-            continue;
-
-        let payload = { timestamp: commit.timestamp };
-        PrepareDiscordMessage(payload, 'discord-commit-message', 'discord-commit-embed', $context);
-        await SendDiscordMessage(payload);
+        push_all = eval(!!core.getInput('discord-commit-push-all'));
     }
+    catch (e)
+    {
+        console.log('Value of discord-commit-push-all input should evaluate to true or false.');
+        throw e;
+    }
+
+    // Send commits to discord
+
+    if (push_all)
+        for (var i = 0; i < github.context.payload.commits.length; i++)
+            await SendCommitToDiscord(github.context.payload.commits[i]);
+    else
+        await SendCommitToDiscord(github.context.payload.head_commit);
 }
 
 async function PublishDiscordJobs()
