@@ -15,7 +15,7 @@ function renderJSON(template, context)
 {
     // Escape double-quotes for JSON.
     let old_escape = Mustache.escape;
-    Mustache.escape = function (value) { return value.replace('"', '\\"'); }
+    Mustache.escape = function (value) { return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
     let result = Mustache.render(template, context);
     Mustache.escape = old_escape;
     return result;
@@ -83,10 +83,10 @@ function PrepareDiscordMessage(msg_payload, content_template, embed_template, $c
     embed_template = embed_template ? core.getInput(embed_template) : embed_template;
     if (embed_template)
     {
-        var embed;
+        embed_template = renderJSON(embed_template, $context);
         try
         {
-            embed = JSON.parse(renderJSON(embed_template, $context));
+            embed = JSON.parse(embed_template);
         }
         catch (e)
         {
@@ -166,7 +166,7 @@ async function PublishDiscordCommits()
     let push_all = false;
     try
     {
-        push_all = eval(!!core.getInput('discord-commit-push-all'));
+        push_all = eval(!!eval(core.getInput('discord-commit-push-all')));
     }
     catch (e)
     {
