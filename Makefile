@@ -8,6 +8,7 @@ release:
 	git commit -m "Latest Release"
 	git push --set-upstream origin release-latest
 	git tag -a latest -m "Latest Release"
+	git push origin latest
 	git checkout master
 	git push origin --delete release-latest
 	git branch -D release-latest
