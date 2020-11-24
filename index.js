@@ -13,9 +13,18 @@ Mustache.escape = function (value) { return value; }
 let render = Mustache.render;
 function renderJSON(template, context)
 {
-    // Escape double-quotes for JSON.
+    // Escape special JSON characters.
     let old_escape = Mustache.escape;
-    Mustache.escape = function (value) { return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
+    Mustache.escape = function (value) {
+        return value
+            .replace(/\\/g, "\\\\")
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\x08/g, '\\b')
+            .replace(/\f/g, '\\f')
+            .replace(/\t/g, '\\t');
+    }
     let result = Mustache.render(template, context);
     Mustache.escape = old_escape;
     return result;
